@@ -3,9 +3,14 @@
 // npm install imports
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 // custom imports
 const feedRoutes = require('./routes/feed');
+
+//MongoDB connection details
+const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env
+	.MONGO_PW}@${process.env.MONGO_CLUSTER}/${process.env.MONGO_DATABASE}`;
 
 //create server
 const app = express();
@@ -32,4 +37,13 @@ app.use((req, res, next) => {
 app.use('/feed', feedRoutes);
 
 //set server port
-app.listen(8080);
+// app.listen(8080);
+
+//Connect to database and set server port
+mongoose
+	.connect(MONGODB_URI)
+	.then(() => {
+		console.log('Connected to MongoDb');
+		app.listen(8080);
+	})
+	.catch((err) => console.log(err));
