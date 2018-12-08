@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 // custom imports
 const feedRoutes = require('./routes/feed');
+const authRoutes = require('./routes/auth');
 
 //MongoDB connection details
 const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${
@@ -22,7 +23,7 @@ const fileStorage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     cb(null, new Date().toISOString() + '-' + file.originalname);
-  },
+  }
 });
 
 const fileFilter = (req, file, cb) => {
@@ -42,7 +43,7 @@ const fileFilter = (req, file, cb) => {
 app.use(bodyParser.json());
 //set up Multer
 app.use(
-  multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'),
+  multer({ storage: fileStorage, fileFilter: fileFilter }).single('image')
 );
 //set up static serving
 app.use('/images', express.static(path.join(__dirname, 'images')));
@@ -52,7 +53,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader(
     'Access-Control-Allow-Methods',
-    'GET, POST, PUT, PATCH, DELETE',
+    'GET, POST, PUT, PATCH, DELETE'
   );
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorisation');
   next();
@@ -60,14 +61,17 @@ app.use((req, res, next) => {
 
 //redirect the routes
 app.use('/feed', feedRoutes);
+app.use('/auth', authRoutes);
 
 //Add Error Handler
 app.use((error, req, res, next) => {
   console.log(error);
   const status = error.statusCode || 500;
   const message = error.message;
+  const data = error.data;
   res.status(status).json({
     message: message,
+    data: data
   });
 });
 
