@@ -48,6 +48,8 @@ exports.login = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
   let loadedUser;
+  console.log(email, password);
+  
   User.findOne({ email: email })
     .then(user => {
       if (!user) {
