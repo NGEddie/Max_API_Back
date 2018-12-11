@@ -7,6 +7,7 @@ const { validationResult } = require('express-validator/check');
 
 //require custom imports
 const Post = require('../models/post');
+const User = require('../models/user');
 
 // Logic for the GET /feed/posts route (get all posts)
 exports.getPosts = (req, res, next) => {
@@ -83,22 +84,31 @@ exports.createPost = (req, res, next) => {
   const title = req.body.title;
   const content = req.body.content;
   const imageUrl = req.file.path;
+  let creator;
 
   const post = new Post({
     title: title,
     content: content,
     imageUrl: imageUrl,
-    creator: {
-      name: 'Bob'
-    }
+    creator: req.userId
   });
 
+  //save Post to Database
   post
     .save()
-    .then(post => {
+    .then(result => User.findById(req.userId)) //get user of post
+    .then(user => {
+      //add post to users list of posts
+      creator = user;
+      user.posts.push(post);
+      return user.save();
+    })
+    .then(user => {
+      //return success message with post and user details
       res.status(201).json({
         message: 'Post created successfully',
-        post: post
+        post: post,
+        creator: { _id: creator._id, name: creator.name }
       });
     })
     .catch(err => {
@@ -144,6 +154,13 @@ exports.updatePost = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
+      //check post belongs to logged in user
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error('Not authorised to view post');
+        error.statusCode = 403;
+        throw error;
+      }
+
       //if image was a new image, delete the old one
       if (imageUrl !== post.imageUrl) {
         clearImage(post.imageUrl);
@@ -174,17 +191,25 @@ exports.deletePost = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
-      //TODO check logged in user
+      //check post belongs to logged in user
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error('Not authorised to view post');
+        error.statusCode = 403;
+        throw error;
+      }
 
       //delete image from server
       clearImage(post.imageUrl);
       //delete post from database
       return Post.findOneAndRemove(postId);
     })
-    .then(result => {
-      console.log(result);
-      res.status(200).json({ message: 'Post Deleted' });
+    .then(result => User.findById(req.userId))
+    .then(user => {
+      //delete post listing from users post array
+      user.posts.pull(postId);
+      return user.save();
     })
+    .then(result => res.status(200).json({ message: 'Post Deleted' }))
     .catch(err => {
       if (!err.statusCode) {
         err.statusCode = 500;
