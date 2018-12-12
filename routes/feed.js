@@ -4,7 +4,7 @@ const { body } = require('express-validator/check');
 
 //custom imports
 const feedCtrl = require('../controllers/feed');
-const isAuth = require('../middleware/is-auth')
+const isAuth = require('../middleware/is-auth');
 
 //set up the router
 const router = express.Router();
@@ -13,11 +13,12 @@ const router = express.Router();
 router.get('/posts', isAuth, feedCtrl.getPosts);
 
 //Get to /feed/post (single post)
-router.get('/post/:postId', isAuth,feedCtrl.getPost);
+router.get('/post/:postId', isAuth, feedCtrl.getPost);
 
 //POST to /feed/post (create a post)
 router.post(
-  '/post',isAuth,
+  '/post',
+  isAuth,
   [
     body('title')
       .trim()
@@ -35,7 +36,8 @@ router.post(
 
 //PUT to /feed/post/:postId (single post edit/update)
 router.put(
-  '/post/:postId',isAuth,
+  '/post/:postId',
+  isAuth,
   [
     body('title')
       .trim()
@@ -52,7 +54,23 @@ router.put(
 );
 
 //DELETE to /feed/post/:postId (single post delete)
-router.delete('/post/:postId',isAuth, feedCtrl.deletePost);
+router.delete('/post/:postId', isAuth, feedCtrl.deletePost);
+
+//Get to /feed/status
+router.get('/status', isAuth, feedCtrl.getStatus);
+
+//PUT to /feed/status
+router.put(
+  '/status',
+  isAuth,
+  [
+    body('status')
+      .trim()
+      .isLength({ min: 2 })
+      .withMessage('Status must be 2 or more characters')
+  ],
+  feedCtrl.updateStatus
+);
 
 //export the routes
 module.exports = router;
