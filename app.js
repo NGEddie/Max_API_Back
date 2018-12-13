@@ -5,9 +5,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
+const graphqlHttp = require('express-graphql');
 // custom imports
 const feedRoutes = require('./routes/feed');
 const authRoutes = require('./routes/auth');
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
 
 //MongoDB connection details
 const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${
@@ -59,9 +62,19 @@ app.use((req, res, next) => {
   next();
 });
 
-//redirect the routes
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
+//redirect the routes (removed for GraphQL)
+// app.use('/feed', feedRoutes);
+// app.use('/auth', authRoutes);
+
+//GraphQL Middleware
+app.use(
+  '/graphql',
+  graphqlHttp({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true
+  })
+);
 
 //Add Error Handler
 app.use((error, req, res, next) => {
@@ -81,5 +94,10 @@ mongoose
   .then(() => {
     console.log('Connected to MongoDb');
     app.listen(8080);
+    //   const server = app.listen(8080);
+    //   const io = require('./socket').init(server);
+    //   io.on('connection', socket => {
+    //     console.log('Client connected');
+    //   });
   })
   .catch(err => console.log(err));
