@@ -3,6 +3,8 @@ const Post = require('../models/post');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const fs = require('fs');
 
 module.exports = {
   createUser: async function({ userInput }, req) {
@@ -233,7 +235,6 @@ module.exports = {
     }
 
     const updatedPost = await post.save();
-    console.log(updatedPost);
 
     return {
       ...updatedPost._doc,
@@ -241,5 +242,76 @@ module.exports = {
       createdAt: updatedPost.createdAt.toISOString(),
       updatedAt: updatedPost.updatedAt.toISOString()
     };
+  },
+  deletePost: async function({ postId }, req) {
+    //check if user is authorised
+    if (!req.isAuth) {
+      const error = new Error('Authentication Failed');
+      error.code = 401;
+      throw error;
+    }
+
+    const post = await Post.findById(postId);
+
+    if (post.creator.toString() !== req.userId.toString()) {
+      const error = new Error('Not authorised to delete this post');
+      error.code = 403;
+      throw error;
+    }
+    //delete image
+    clearImage(post.imageUrl);
+
+    //delete post from DB
+    await Post.findByIdAndDelete(postId);
+
+    //delete post from users list
+    const user = await User.findById(req.userId);
+    user.posts.pull(postId);
+    await user.save();
+
+    return true;
+  },
+  getUser: async function(args, req) {
+    if (!req.isAuth) {
+      const error = new Error('Authentication Failed');
+      error.code = 401;
+      throw error;
+    }
+
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      const error = new Error('User not found');
+      error.code = 404;
+      throw error;
+    }
+
+    return {
+      ...user._doc,
+      _id: user._id.toString()
+    };
+  },
+  editStatus: async function({ newStatus }, req) {
+    if (!req.isAuth) {
+      const error = new Error('Authentication Failed');
+      error.code = 401;
+      throw error;
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error('User not found');
+      error.code = 404;
+      throw error;
+    }
+
+    user.status = newStatus;
+    await user.save();
+    return true;
   }
+};
+//Helper Functions
+const clearImage = filePath => {
+  filePath = path.join(__dirname, '..', filePath);
+  fs.unlink(filePath, err => console.log(err));
 };

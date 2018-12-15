@@ -5,7 +5,7 @@ type Post {
   _id: ID!
   title: String!
   content: String!
-  imageUrl: String
+  imageUrl: String!
   creator: User!
   createdAt: String
   updatedAt: String
@@ -44,14 +44,17 @@ input postInputData {
 
 type RootQuery {
   login(email: String!, password: String!): AuthData!
-  getPosts(page: Int!): PostData!
+  getPosts(page: Int): PostData!
   getPost(postId: String!): Post!
+  getUser: User
 }
 
 type RootMutation {
   createUser(userInput: userInputData): User!
   createPost(postInput: postInputData): Post!
   editPost(postId: String!, postInput: postInputData): Post!
+  deletePost(postId: ID!): Boolean
+  editStatus(newStatus: String!): Boolean
   
 }  
 
